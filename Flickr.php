@@ -42,12 +42,16 @@ class Flickr extends Exception {
 			  	
 			$tab_response	=	array();
 			$response		=	json_decode($response['content']);
-
+			
 			foreach ($response->photos->photo as $photo) {
 					$tab_response[]	=	array(
 											'name'		=>	$photo->title,
 											'id'		=>	$photo->id,
-											'photo_url'	=>	'http://www.flickr.com/photos/'.$photo->owner.'/'.$photo->id.'/',
+											'photo_url'	=>	array(
+													'small'		=>	'http://farm'.$photo->farm.'.staticflickr.com/'.$photo->server.'/'.$photo->id.'_'.$photo->secret.'_s.jpg',
+													'medium'	=>	'http://farm'.$photo->farm.'.staticflickr.com/'.$photo->server.'/'.$photo->id.'_'.$photo->secret.'_z.jpg',
+													'high'		=>	'http://farm'.$photo->farm.'.staticflickr.com/'.$photo->server.'/'.$photo->id.'_'.$photo->secret.'_b.jpg'
+											),
 											'user_info'	=>	$this->get_userInfo($photo->owner)
 										);
 			}
@@ -72,10 +76,6 @@ class Flickr extends Exception {
 			
 			$response 		=	json_decode($response['content']);
 			
-			
-			if (isset($response->stat) && !empty($response->stat))
-					return trigger_error('Flickr Class error : "'.$response->message.'"');
-			
 			return 	$tab_response	=	array(
 			    							'id'			=>	$response->person->id,
 			    							//'is_pro'		=>	$response->person->ispro,
@@ -85,6 +85,35 @@ class Flickr extends Exception {
 			    							'url_photos'	=>	$response->person->photosurl->_content,
 			    							'nb_photos'		=>	$response->person->photos->count->_content
 			    						);
+	}
+	
+	
+	/**
+	 *	@resume		Get url of the source with size of a photo
+	 *	@params		photo_id
+	 *	@return 	An array with size of the photo and the source url
+	**/
+	public function get_photoUrls($photo_id) {
+			$rest		=	new REST();
+			$response	=	$rest	->setUrl('https://api.flickr.com/services/rest/?method=flickr.photos.getSizes'
+												.'&api_key='.$this->api_key
+												.'&photo_id='.$photo_id
+			  						    		.'&format=json'
+			  						    		.'&nojsoncallback=1')
+									->get();
+			
+			$response 		=	json_decode($response['content']);
+
+			$tab_response	=	array();
+			foreach ($response->sizes->size as $size) {
+					$tab_response[]	=	array(
+							'width'	=>	$size->width,
+							'height'=>	$size->height,
+							'url' 	=>	$size->url
+					);
+			}
+			
+			return $tab_response;
 	}
 	
 	
